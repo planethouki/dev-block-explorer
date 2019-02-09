@@ -110,8 +110,8 @@
 			var obj = JSON.parse(e.data);
 			if ('uid' in obj) {
 				wsConnection.send('{"uid": "'+obj.uid+'", "subscribe":"block"}');
-				wsConnection.send('{"uid": "'+obj.uid+'", "subscribe":"unconfirmedAdded"}');
-				wsConnection.send('{"uid": "'+obj.uid+'", "subscribe":"status"}');
+				// wsConnection.send('{"uid": "'+obj.uid+'", "subscribe":"unconfirmedAdded"}');
+				// wsConnection.send('{"uid": "'+obj.uid+'", "subscribe":"status"}');
 			} else {
 				if ('block' in obj && blockHandler)
 					blockHandler(obj);
