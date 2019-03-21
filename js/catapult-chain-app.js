@@ -72,7 +72,7 @@
 		this.use(CatapultFormat);
 
 		var host = location.hostname;
-		var host = '54.238.216.37';
+		var host = '54.178.241.129';
 		var apiHost = 'http://' + host + ':3000';
 		var wsHost = 'ws://' + host + ':3000/ws';
 		var getJson = function(a, b, c) {
