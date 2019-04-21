@@ -4,7 +4,7 @@ $(function() {
 	var FAILED_LIMIT = 100;
 
 	// NAVBAR related
-	var 
+	var
 		$window = $(window),
 		$document = $(document),
 		$popoverLink = $('[data-popover]'),
@@ -82,15 +82,15 @@ $(function() {
 
 			evt.preventDefault();
 			switch(evt.which) {
-			case 37:	// arrow left 
-				$("a[rel=prev]").click();				
+			case 37:	// arrow left
+				$("a[rel=prev]").click();
 				break;
 			case 39:	// arrow right
 				$("a[rel=next]").click();
 				break;
 			}
 		});
-		
+
 		$('#network').change(changeNetwork);
 		$(`#network > option[value=${getSelectVal()}]`).attr("selected", "selected");
 		console.log(`#netrowk > option[value=${getSelectVal()}]`);
@@ -119,12 +119,14 @@ $(function() {
 			var unconfirmedHandler = undefined;
 			var additionalStatusHandler = undefined;
 
+			var unconfirmedInterval = undefined;
+
 			var failedHashes = {};
 			var failedStatuses = [];
 			var transactionStatusHandler = function(obj) {
 				if (obj.hash in failedHashes)
 					return;
-			
+
 				app.context_prototype.prototype.fmtTimestamp('deadline', obj, epochTimestamp);
 
 				failedHashes[obj.hash] = true;
@@ -296,7 +298,7 @@ $(function() {
 
 				context.render('t/search.html')
 					.appendTo(context.$element());
-					
+
 				$.getJSON(apiHost + '/api3/search', {hash:hash}, function(items) {
 					renderTxes(context, '#search_transactions', items, function(cbs){
 						var item = items['block'];
@@ -346,7 +348,7 @@ $(function() {
 							context.formatBlock(i, item, epochTimestamp);
 						});
 						var h = parseInt(items[items.length - 1].block.height, 10);
-						
+
 						var data = {};
 						if (items.length == 100) { data['next'] = h + 100; }
 						if (h > 100) { data['prev'] = h - 100; }
@@ -378,6 +380,49 @@ $(function() {
 						}
 					});
 				})
+			});
+
+
+			this.get('#/unconfirmed/', function(context) {
+				context.app.swap('');
+				setActiveLink('unconfirmed', context);
+
+				// collect UTs coming via WS in big dict
+				var allUts = { };
+				context.render('t/unconfirmed.html', { header: 'Unconfirmed transactions' })
+					.replace(context.$element());
+
+				unconfirmedHandler = function handler(obj) {
+					obj.className='newRow';
+
+					if (!(obj.meta.hash in allUts)) {
+						allUts[obj.meta.hash] = obj;
+						var txes = { transfers: [ obj ] };
+						context.formatTransaction(Object.keys(allUts).length, obj, epochTimestamp);
+						(createTxRenderer(context, obj, function(renderer) {
+							renderer.prependTo('#datarows')
+						}))();
+					}
+				};
+
+				clearInterval(unconfirmedInterval);
+				unconfirmedInterval = setInterval(function() {
+					getJson('/unconfirmed', function(transactionsObj) {
+						var confirmedHash = Object.keys(allUts).filter(function(hash) {
+							return !transactionsObj.find(function(tx) {
+								return tx.meta.hash === hash
+							});
+						});
+						confirmedHash.map(function(hash) {
+							delete allUts[hash];
+						});
+						if (unconfirmedHandler) {
+							transactionsObj.map(function(x) {
+								unconfirmedHandler(x)
+							});
+						}
+					});
+				}, 1000);
 			});
 
 			function displayBlock(params, context) {
@@ -632,7 +677,7 @@ $(function() {
 				averages.push(0);
 
 				// data
-				
+
 				for (var i = 0; i < numTransactions.length - 1; ++i) {
 					data.addRow([heights[i], numTransactions[i], Math.floor(averages[i])]);
 				}
@@ -695,7 +740,7 @@ $(function() {
 				var startHeight = parseInt(this.params['startHeight'], 10);
 				var endHeight = parseInt(this.params['endHeight'], 10);
 				var grouping = parseInt(this.params['grouping'], 10);
-				
+
 				getJson('/chain/height', function(items) {
 					if (0 === endHeight)
 						endHeight = items.height[0];
@@ -728,11 +773,11 @@ $(function() {
 		};
 	}
 
-	
+
 	init();
 	google.charts.load('current', {'packages':['corechart', 'controls']});
 
 	let objSammy = getSammy();
 	objSammy.app.run('#/blocks/0');
-	
+
 });
